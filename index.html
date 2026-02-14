@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IronTrack</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <script src="https://unpkg.com/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+</head>
+
+<body>
+  <h1>IronTrack</h1>
+
+  <input type="file" accept="image/*" capture="environment" id="cameraInput" />
+  <button onclick="scanImage()">Scan Serial Number</button>
+
+  <div id="result"></div>
+
+  <h2>Assets</h2>
+  <div id="assetList"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
