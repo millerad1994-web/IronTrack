@@ -1,11 +1,11 @@
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open("irontrack").then(cache => {
+    caches.open("irontrack-v1").then(cache => {
       return cache.addAll([
-        "/",
-        "/index.html",
-        "/styles.css",
-        "/app.js"
+        "/irontrack/",
+        "/irontrack/index.html",
+        "/irontrack/styles.css",
+        "/irontrack/app.js"
       ]);
     })
   );
