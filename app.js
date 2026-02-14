@@ -5,26 +5,44 @@ function scanImage() {
   const file = input.files[0];
 
   if (!file) {
-    alert("Take a photo first.");
+    alert("Select a photo first.");
     return;
   }
 
-  document.getElementById("result").innerText = "Scanning...";
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerText = "Scanning image...";
 
   Tesseract.recognize(file, 'eng')
     .then(({ data: { text } }) => {
 
+      console.log("Raw OCR:", text);
+
       const cleaned = text
         .replace(/[^a-zA-Z0-9\-]/g, " ")
         .split(" ")
-        .filter(t => t.length > 3)[0] || "UNKNOWN";
+        .filter(t => t.length > 3);
 
-      createAsset(cleaned);
-      document.getElementById("result").innerText = "Detected: " + cleaned;
+      if (cleaned.length === 0) {
+        resultDiv.innerText = "No valid serial number detected.";
+        return;
+      }
+
+      const detectedSerial = cleaned[0];
+
+      resultDiv.innerHTML = `
+        <strong>Detected Serial:</strong><br>
+        ${detectedSerial}
+        <br><br>
+        <button onclick="confirmSave('${detectedSerial}')">Save Asset</button>
+      `;
+    })
+    .catch(err => {
+      resultDiv.innerText = "Error scanning image.";
+      console.error(err);
     });
 }
 
-function createAsset(serial) {
+function confirmSave(serial) {
   const newAsset = {
     id: Date.now(),
     serialNumber: serial,
@@ -34,6 +52,8 @@ function createAsset(serial) {
 
   assets.push(newAsset);
   localStorage.setItem("assets", JSON.stringify(assets));
+
+  document.getElementById("result").innerText = "Asset Saved ✔";
   renderAssets();
 }
 
