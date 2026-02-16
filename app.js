@@ -10,43 +10,72 @@ function scanImage() {
   }
 
   const resultDiv = document.getElementById("result");
-  resultDiv.innerText = "Scanning image...";
+  resultDiv.innerText = "Preparing image...";
 
-  Tesseract.recognize(file, 'eng')
-    .then(({ data: { text } }) => {
+  // Resize image for faster & more reliable OCR on iPhone
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement("canvas");
+      const scale = 1000 / img.width; // resize large images
+      canvas.width = 1000;
+      canvas.height = img.height * scale;
 
-      console.log("Raw OCR:", text);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      const cleaned = text
-        .replace(/[^a-zA-Z0-9\-]/g, " ")
-        .split(" ")
-        .filter(t => t.length > 3);
+      runOCR(canvas);
+    };
+    img.src = event.target.result;
+  };
 
-      if (cleaned.length === 0) {
-        resultDiv.innerText = "No valid serial number detected.";
-        return;
+  reader.readAsDataURL(file);
+}
+
+function runOCR(imageCanvas) {
+  const resultDiv = document.getElementById("result");
+
+  resultDiv.innerText = "Scanning text...";
+
+  Tesseract.recognize(
+    imageCanvas,
+    'eng',
+    {
+      logger: m => {
+        if (m.status === "recognizing text") {
+          resultDiv.innerText = "Scanning: " + Math.round(m.progress * 100) + "%";
+        }
       }
+    }
+  ).then(({ data: { text } }) => {
 
-      const detectedSerial = cleaned[0];
+    console.log("OCR TEXT:", text);
 
-      resultDiv.innerHTML = `
-        <strong>Detected Serial:</strong><br>
-        ${detectedSerial}
-        <br><br>
-        <button onclick="confirmSave('${detectedSerial}')">Save Asset</button>
-      `;
-    })
-    .catch(err => {
-      resultDiv.innerText = "Error scanning image.";
-      console.error(err);
-    });
+    const lines = text
+      .replace(/[^a-zA-Z0-9\-]/g, "\n")
+      .split("\n")
+      .filter(t => t.length > 3);
+
+    if (lines.length === 0) {
+      resultDiv.innerText = "No serial number detected.";
+      return;
+    }
+
+    resultDiv.innerHTML =
+      "<strong>Detected Text:</strong><br><br>" +
+      lines.join("<br>") +
+      "<br><br><button onclick=\"confirmSave('" + lines[0] + "')\">Save First Result</button>";
+  }).catch(err => {
+    resultDiv.innerText = "Scan failed.";
+    console.error(err);
+  });
 }
 
 function confirmSave(serial) {
   const newAsset = {
     id: Date.now(),
     serialNumber: serial,
-    notes: "",
     date: new Date().toLocaleString()
   };
 
@@ -66,7 +95,7 @@ function renderAssets() {
     div.className = "assetCard";
     div.innerHTML = `
       <strong>${asset.serialNumber}</strong>
-      <p>Created: ${asset.date}</p>
+      <p>${asset.date}</p>
     `;
     container.appendChild(div);
   });
